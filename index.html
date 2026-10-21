@@ -64,6 +64,18 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.1rem)/1.05 var(--display);letter-spacing:.
 
 .stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(.8rem,2.5vh,1.4rem);}
 .stage .head{margin-bottom:clamp(.6rem,3vh,1.8rem)}
+.boardwrap{position:relative}
+.whirl{position:absolute;left:50%;top:50%;width:150%;height:auto;aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:none;overflow:visible}
+.whirl path{fill:none;stroke:rgba(255,214,140,.85);stroke-width:4.5;stroke-linecap:round;filter:drop-shadow(0 0 6px rgba(255,140,40,.7))}
+.whirl path.far{stroke:rgba(200,175,255,.6);stroke-width:3}
+.whirl .spin{transform-box:view-box;transform-origin:0 0;animation:spin .55s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.big{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;
+  --pk:#ff7a1a;--pk2:#e8620c;--stem:#4fae3c;--face:#ffe36a}
+.big svg{width:92%;height:92%;filter:drop-shadow(0 0 26px rgba(255,150,40,.85)) drop-shadow(0 0 70px rgba(255,110,20,.5));animation:bigflame 2.6s ease-in-out infinite}
+.big.in svg{animation:bigin 1s cubic-bezier(.2,1.5,.4,1) both,bigflame 2.6s 1s ease-in-out infinite}
+@keyframes bigin{0%{transform:scale(.05) rotate(-200deg);opacity:0}70%{opacity:1}100%{transform:none;opacity:1}}
+@keyframes bigflame{0%,100%{filter:drop-shadow(0 0 22px rgba(255,150,40,.8)) drop-shadow(0 0 60px rgba(255,110,20,.45))}50%{filter:drop-shadow(0 0 34px rgba(255,190,70,1)) drop-shadow(0 0 90px rgba(255,130,30,.6))}}
 .board{display:grid;grid-template-columns:repeat(5,var(--c));gap:var(--g);justify-content:center}
 
 .cell{
@@ -117,7 +129,7 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.1rem)/1.05 var(--display);letter-spacing:.
 
 @media (prefers-reduced-motion:reduce){
   .cell,.moon{transition-duration:.01s}
-  .cell.lit svg,.board.win .cell,.result.on,.result.on .coord{animation:none}
+  .cell.lit svg,.board.win .cell,.result.on,.result.on .coord,.big svg,.big.in svg,.whirl .spin{animation:none}
 }
 </style>
 
@@ -226,9 +238,17 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.1rem)/1.05 var(--display);letter-spacing:.
   <header class="head">
     <h1>Lantern Night</h1>
   </header>
-  <div class="board" id="board" role="group" aria-label="Pumpkin board, 25 pumpkins in a 5 by 5 grid"></div>
+  <div class="boardwrap" id="boardwrap">
+    <div class="board" id="board" role="group" aria-label="Pumpkin board, 25 pumpkins in a 5 by 5 grid"></div>
+    <svg class="whirl" id="whirl" viewBox="-100 -100 200 200" aria-hidden="true" hidden>
+      <g class="spin">
+        <path d="M0-8C30-10 52 10 46 40" /><path d="M8 0C10 30-10 52-40 46" /><path d="M0 8C-30 10-52-10-46-40" /><path d="M-8 0C-10-30 10-52 40-46" />
+        <path class="far" d="M0-30C55-30 80 20 60 70" /><path class="far" d="M30 0C30 55-20 80-70 60" /><path class="far" d="M0 30C-55 30-80-20-60-70" /><path class="far" d="M-30 0C-30-55 20-80 70-60" />
+      </g>
+    </svg>
+    <div class="big" id="big" hidden><svg viewBox="0 0 64 64" role="img" aria-label="A huge glowing jack-o'-lantern"><use href="#pk"/></svg></div>
+  </div>
   <div class="result" id="result" hidden>
-    <p class="clr" id="clr"></p>
     <div class="final" id="final" hidden>
       <p class="coord coord-n" id="cN"></p>
       <p class="coord coord-w" id="cW"></p>
@@ -254,12 +274,12 @@ function stream(seed){let a=seed>>>0;return function(){a=(a+0x6D2B79F5)>>>0;let 
 function unlock(b64,phrase){const raw=atob(b64);const next=stream(fnv(phrase));const out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i)^next();return new TextDecoder().decode(out);}
 //CODEC-END
 
-const PAYLOAD='HLqaUgMyUM7OIPv1cV8pA09VyvioWQMV0KsX5rb01F92';
+const PAYLOAD='HLqaUgMyUM7PIPn2drf+kXI1KH+/q4Qb1qsJ';
 
 const N=5,SIZE=N*N,PARS=[3,5,7];
 const $=s=>document.querySelector(s);
 const root=document.documentElement;
-const board=$('#board'),result=$('#result'),clr=$('#clr'),fin=$('#final'),nextBtn=$('#next'),live=$('#live');
+const board=$('#board'),result=$('#result'),fin=$('#final'),nextBtn=$('#next'),live=$('#live');
 const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- sound (synthesized, starts only from the button) ---------- */
@@ -411,9 +431,10 @@ function render(){
 
 function newLevel(l){
   level=l;par=PARS[l-1];moves=0;finished=false;
-  board.classList.remove('win');root.classList.remove('win');
+  board.classList.remove('win');root.classList.remove('win');board.style.visibility='';$('#big').hidden=true;$('#big').classList.remove('in');$('#whirl').setAttribute('hidden','');
   result.hidden=true;result.classList.remove('on');fin.hidden=true;
   $('#cN').textContent='';$('#cW').textContent='';
+  cells.forEach(function(c){c.getAnimations().forEach(function(an){an.cancel();});});
   lit=Array(SIZE).fill(true);
   shuffle(Array.from({length:SIZE},function(_,i){return i;})).slice(0,par).forEach(flipAt);
   render();
@@ -429,26 +450,44 @@ function press(i){
 
 function win(){
   finished=true;passed.push(level);
-  board.classList.add('win');root.classList.add('win');
   const last=level===PARS.length;
-  clr.hidden=last;fin.hidden=!last;
-  if(last){
-    let text='';
-    try{text=unlock(PAYLOAD,'lantern|'+passed.join('|'));}catch(e){text='';}
-    const p=text.split('\n');
-    $('#cN').textContent=p[0]||'';
-    $('#cW').textContent=p[1]||'';
-    nextBtn.hidden=true;
-    say('All three levels cleared. The final coordinates are shown below the board.');
-  }else{
-    clr.textContent='Level cleared';
-    nextBtn.hidden=false;
-    say('Every pumpkin is lit. Level cleared.');
-  }
-  result.hidden=false;result.classList.add('on');
-  Sound.victory(last);
   render();
-  setTimeout(function(){result.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});},500);
+  if(!last){
+    board.classList.add('win');root.classList.add('win');
+    fin.hidden=true;nextBtn.hidden=false;
+    result.hidden=false;result.classList.add('on');
+    say('Every pumpkin is lit.');Sound.victory(false);
+    setTimeout(function(){result.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});},500);
+    return;
+  }
+  root.classList.add('win');Sound.victory(true);
+  let text='';
+  try{text=unlock(PAYLOAD,'lantern|'+passed.join('|'));}catch(e){text='';}
+  const p=text.split('\n');
+  $('#cN').textContent=p[0]||'';$('#cW').textContent=p[1]||'';
+  nextBtn.hidden=true;fin.hidden=false;
+  const big=$('#big'),whirl=$('#whirl');
+  function reveal(){
+    result.hidden=false;result.classList.add('on');
+    say('All three levels cleared. The final coordinates are shown below the giant jack-o-lantern.');
+    setTimeout(function(){result.scrollIntoView({behavior:reduce?'auto':'smooth',block:'nearest'});},300);
+  }
+  if(reduce){board.style.visibility='hidden';big.hidden=false;reveal();return;}
+  // the whirlwind: every pumpkin spirals inward, spinning and shrinking, then vanishes
+  whirl.removeAttribute('hidden');whirl.animate([{opacity:0,transform:'translate(-50%,-50%) scale(.4)'},{opacity:1,transform:'translate(-50%,-50%) scale(1)',offset:.25},{opacity:1,transform:'translate(-50%,-50%) scale(.9)',offset:.8},{opacity:0,transform:'translate(-50%,-50%) scale(.2)'}],{duration:2600,easing:'ease-in-out',fill:'forwards'});
+  const br=board.getBoundingClientRect(),cx=br.left+br.width/2,cy=br.top+br.height/2;
+  cells.forEach(function(c,i){
+    const r=c.getBoundingClientRect(),x0=r.left+r.width/2-cx,y0=r.top+r.height/2-cy;
+    const rad0=Math.hypot(x0,y0),a0=Math.atan2(y0,x0),turns=2.2+Math.random()*.8,frames=[];
+    for(let k=0;k<=24;k++){
+      const t=k/24,e=t*t*(3-2*t),rad=rad0*(1-e)+ (Math.sin(t*Math.PI)*18),a=a0+e*turns*2*Math.PI;
+      const x=Math.cos(a)*rad-x0,y=Math.sin(a)*rad-y0-Math.sin(t*Math.PI)*24;
+      frames.push({transform:'translate('+x.toFixed(1)+'px,'+y.toFixed(1)+'px) rotate('+(e*900).toFixed(0)+'deg) scale('+(1-.8*e).toFixed(3)+')',opacity:t<.8?1:(1-t)*5});
+    }
+    c.animate(frames,{duration:1900+Math.random()*300,delay:Math.random()*350,easing:'ease-in',fill:'forwards'});
+  });
+  setTimeout(function(){board.style.visibility='hidden';big.hidden=false;big.classList.add('in');},2300);
+  setTimeout(reveal,3400);
 }
 
 /* ---------- the occasional bat ---------- */
