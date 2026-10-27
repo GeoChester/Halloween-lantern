@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Lantern Night</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -125,14 +125,6 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.1rem)/1.05 var(--display);letter-spacing:.
 .btn[aria-pressed="true"]{color:var(--pumpkin);border-color:var(--pumpkin)}
 .btn.primary{color:#1a0b00;background:var(--pumpkin);border-color:var(--pumpkin);font-size:1rem;padding:.6rem 1.1rem}
 .btn.primary:hover{color:#1a0b00;background:#ff9340}
-/* hidden admin door: tap the title three times */
-.admin{position:fixed;inset:0;z-index:40;display:flex;align-items:center;justify-content:center;background:rgba(10,6,24,.86);padding:0 16px}
-.acard{width:min(100%,320px);background:var(--sky);border:1px solid var(--edge);border-radius:14px;padding:18px;display:flex;flex-direction:column;gap:10px;color:var(--bone)}
-.acard label{font-family:var(--display);font-size:1.3rem}
-.acard input{font:inherit;font-size:18px;padding:8px 10px;border-radius:8px;border:1px solid var(--edge);background:var(--ink);color:var(--bone)}
-.arow{display:flex;gap:8px;justify-content:flex-end}
-.arow button{font:inherit;font-size:16px;min-height:44px;padding:6px 16px;border-radius:999px;border:1px solid var(--pumpkin);background:transparent;color:var(--bone);cursor:pointer}
-.acard p{margin:0;min-height:1.2em;font-size:15px;color:#ff9a8a;font-style:italic}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 @media (prefers-reduced-motion:reduce){
@@ -272,12 +264,6 @@ h1{margin:0;font:400 clamp(2rem,6vw,3.1rem)/1.05 var(--display);letter-spacing:.
   </div>
 </footer>
 <p class="sr" id="live" role="status" aria-live="polite"></p>
-<div class="admin" id="admin" hidden><div class="acard" role="dialog" aria-modal="true" aria-labelledby="apwl">
-  <label id="apwl" for="apw">Password</label>
-  <input id="apw" type="password" autocomplete="off">
-  <p id="aerr" role="status"></p>
-  <div class="arow"><button id="acancel" type="button">Cancel</button><button id="aok" type="button">Open</button></div>
-</div></div>
 
 <script>
 (function(){
@@ -549,16 +535,6 @@ musicBtn.addEventListener('click',function(){
 
 // replay appears only with the final coordinates, and always starts again from level 1
 $('#replay').addEventListener('click',function(){passed=[];newLevel(1);window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});});
-// admin door: three quick taps on the title ask for the password; the right one lights the last board and plays the ending
-const ADMIN=217580182;let titleTaps=[];
-function adminHash(t){let h=2166136261;t="jar-admin|"+t;for(let i=0;i<t.length;i++){h^=t.charCodeAt(i);h=Math.imul(h,16777619)>>>0;}return h>>>0;}
-$('h1').addEventListener('pointerdown',function(){const now=performance.now();titleTaps=titleTaps.filter(function(t){return now-t<1500;});titleTaps.push(now);
-  if(titleTaps.length>=3){titleTaps=[];$('#aerr').textContent='';$('#apw').value='';$('#admin').hidden=false;setTimeout(function(){$('#apw').focus();},0);}});
-function adminTry(){if(adminHash($('#apw').value)!==ADMIN){$('#aerr').textContent="That's not it.";$('#apw').select();return;}
-  $('#admin').hidden=true;passed=[1,2];newLevel(PARS.length);lit=Array(SIZE).fill(true);render();setTimeout(win,300);}
-$('#aok').addEventListener('click',adminTry);$('#acancel').addEventListener('click',function(){$('#admin').hidden=true;});
-$('#apw').addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();adminTry();}else if(e.key==='Escape')$('#admin').hidden=true;});
-window.__ln={get level(){return level;},get finished(){return finished;},solve:function(){lit=Array(SIZE).fill(true);render();win();}};
 newLevel(1);
 })();
 </script>
